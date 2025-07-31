@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>To-Do List App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    #taskForm {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 400px;
+      width: 100%;
+      margin-bottom: 30px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    input[type="text"], input[type="date"], input[type="time"] {
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      background: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #218838;
+    }
+
+    ul#taskList {
+      list-style: none;
+      padding: 0;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    li.taskItem {
+      background: white;
+      margin-bottom: 10px;
+      padding: 15px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 5px solid #007bff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .taskDetails {
+      flex-grow: 1;
+    }
+
+    .taskDetails.completed {
+      text-decoration: line-through;
+      color: #999;
+    }
+
+    .taskActions {
+      display: flex;
+      gap: 8px;
+      margin-left: 10px;
+    }
+
+    .taskActions button {
+      background: #6c757d;
+      color: white;
+      padding: 6px 10px;
+      font-size: 14px;
+      border-radius: 4px;
+    }
+
+    .taskActions button:hover {
+      opacity: 0.9;
+    }
+
+    .editMode input[type="text"],
+    .editMode input[type="date"],
+    .editMode input[type="time"] {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>To-Do List App</h1>
+
+  <form id="taskForm">
+    <input type="text" id="taskInput" placeholder="Enter task description" required />
+    <input type="date" id="taskDate" required />
+    <input type="time" id="taskTime" required />
+    <button type="submit">Add Task</button>
+  </form>
+
+  <ul id="taskList"></ul>
+
+  <script>
+    const taskForm = document.getElementById('taskForm');
+    const taskInput = document.getElementById('taskInput');
+    const taskDate = document.getElementById('taskDate');
+    const taskTime = document.getElementById('taskTime');
+    const taskList = document.getElementById('taskList');
+
+    let tasks = [];
+
+    function renderTasks() {
+      taskList.innerHTML = '';
+      tasks.forEach((task, index) => {
+        const li = document.createElement('li');
+        li.className = 'taskItem';
+
+        if (task.editing) {
+          // Editable form
+          li.classList.add('editMode');
+          li.innerHTML = `
+            <div class="taskDetails">
+              <input type="text" id="editDesc${index}" value="${task.description}" />
+              <input type="date" id="editDate${index}" value="${task.date}" />
+              <input type="time" id="editTime${index}" value="${task.time}" />
+            </div>
+            <div class="taskActions">
+              <button onclick="saveEdit(${index})">Save</button>
+              <button onclick="cancelEdit(${index})">Cancel</button>
+            </div>
+          `;
+        } else {
+          const completedClass = task.completed ? 'completed' : '';
+          li.innerHTML = `
+            <div class="taskDetails ${completedClass}">
+              <strong>${task.description}</strong><br>
+              <small>Due: ${task.date} at ${task.time}</small>
+            </div>
+            <div class="taskActions">
+              <button onclick="toggleComplete(${index})">${task.completed ? 'Undo' : 'Done'}</button>
+              <button onclick="editTask(${index})">Edit</button>
+              <button onclick="deleteTask(${index})">Delete</button>
+            </div>
+          `;
+        }
+
+        taskList.appendChild(li);
+      });
+    }
+
+    function addTask(description, date, time) {
+      tasks.push({
+        description,
+        date,
+        time,
+        completed: false,
+        editing: false
+      });
+      renderTasks();
+    }
+
+    function deleteTask(index) {
+      tasks.splice(index, 1);
+      renderTasks();
+    }
+
+    function toggleComplete(index) {
+      tasks[index].completed = !tasks[index].completed;
+      renderTasks();
+    }
+
+    function editTask(index) {
+      tasks[index].editing = true;
+      renderTasks();
+    }
+
+    function cancelEdit(index) {
+      tasks[index].editing = false;
+      renderTasks();
+    }
+
+    function saveEdit(index) {
+      const desc = document.getElementById(`editDesc${index}`).value.trim();
+      const date = document.getElementById(`editDate${index}`).value;
+      const time = document.getElementById(`editTime${index}`).value;
+
+      if (!desc || !date || !time) {
+        alert("All fields are required.");
+        return;
+      }
+
+      tasks[index] = {
+        description: desc,
+        date: date,
+        time: time,
+        completed: tasks[index].completed,
+        editing: false
+      };
+      renderTasks();
+    }
+
+    // Form submission
+    taskForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const desc = taskInput.value.trim();
+      const date = taskDate.value;
+      const time = taskTime.value;
+
+      if (!desc || !date || !time) return;
+
+      addTask(desc, date, time);
+      taskInput.value = '';
+      taskDate.value = '';
+      taskTime.value = '';
+    });
+
+    // Initial render
+    renderTasks();
+  </script>
+</body>
+</html>
